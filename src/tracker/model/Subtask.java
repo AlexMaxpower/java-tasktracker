@@ -1,14 +1,16 @@
+package tracker.model;
+
 public class Subtask extends Task {
 
-    private int epicId;
+    private Epic epic;
 
-    public Subtask(String name, String description, String status, int epicId) {
+    public Subtask(String name, String description, String status, Epic epic) {
         super(name, description, status);
-        this.epicId = epicId;
+        this.epic = epic;
     }
 
-    public int getEpicId() {
-        return epicId;
+    public Epic getEpic() {
+        return epic;
     }
 
     @Override
@@ -18,7 +20,7 @@ public class Subtask extends Task {
                 ": " + super.getDescription() +
                 " (" + super.getStatus() +
                 ", ID=" + super.getTaskId() +
-                ", epicID=" + epicId +
+                ", epicID=" + epic.getTaskId() +
                 ")";
     }
 }

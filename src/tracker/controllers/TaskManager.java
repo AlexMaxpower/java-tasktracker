@@ -1,4 +1,6 @@
-import java.util.ArrayList;
+package tracker.controllers;
+
+import tracker.model.*;
 import java.util.HashMap;
 
 public class TaskManager {
@@ -41,7 +43,7 @@ public class TaskManager {
         System.out.println("----");
         for (Epic epic : epics.values()) {
             System.out.println(epic);
-            getEpicSubtasks(epic.getTaskId());
+            getEpicSubtasks(epic);
         }
         System.out.println("");
     }
@@ -55,16 +57,17 @@ public class TaskManager {
     }
 
     // получение задачи по идентификатору (пункт 2.3)
-    public void getTask(int id) {
+    public Task getTask(Integer id) {
         if (tasks.containsKey(id)) {
-            System.out.println(tasks.get(id));
+            return tasks.get(id);
         }
         else if (subtasks.containsKey(id)) {
-            System.out.println(subtasks.get(id));
+            return subtasks.get(id);
         }
         else if (epics.containsKey(id)) {
-            System.out.println(epics.get(id));
+            return epics.get(id);
         }
+        return null;
     }
 
     // добавляем или обновляем задачу/подзадачу/эпик в менеджер (пункты 2.4 и 2.5)
@@ -82,11 +85,10 @@ public class TaskManager {
 
         else if (o.getClass() == Subtask.class) {
             subtasks.put(id, (Subtask) o);
-            if (newTask) {
-                epics.get(((Subtask) o).getEpicId()).addSubtaskId(id);
+            if (!newTask) {
+                ((Subtask) o).getEpic().deleteSubtask(((Subtask) o));
             }
-            // после добавления или обновления подзадачи необходимо уточнить статус эпика
-            checkEpicStatus(subtasks.get(id).getEpicId());
+            ((Subtask) o).getEpic().addSubtaskEpic(((Subtask) o));
         }
 
         else if (o.getClass() == Epic.class) {
@@ -100,51 +102,22 @@ public class TaskManager {
             tasks.remove(id);
         }
         else if (subtasks.containsKey(id)) {      // ищем id в подзадачах и если есть, то удаляем также из эпика
-            Integer epicId = subtasks.get(id).getEpicId();
-            epics.get(epicId).deleteSubtaskId(id);
+            Epic epic = subtasks.get(id).getEpic();
+            epic.deleteSubtask(subtasks.get(id));
             subtasks.remove(id);
-            checkEpicStatus(epicId); // уточняем статус эпика после удаления
         }
         else if (epics.containsKey(id)) {         // ищем id в эпиках и если есть, то удаляем также подзадачи
-            for (Integer subtaskId : epics.get(id).getSubtaskIds()) {
-                subtasks.remove(subtaskId);
+            for (Subtask subtask: epics.get(id).getSubtasksEpic()) {
+                subtasks.remove(subtask);
             }
             epics.remove(id);
         }
     }
 
     // получение списка подзадач определеннного эпика (пункт 3.1)
-    private void getEpicSubtasks(Integer id) {
-        if (epics.containsKey(id)) {
-            for (Integer subtaskId : epics.get(id).getSubtaskIds()) {
-                System.out.println(subtasks.get(subtaskId));
-            }
+    public void getEpicSubtasks(Epic epic) {
+        for (Subtask subtask : epic.getSubtasksEpic()) {
+            System.out.println(subtask);
         }
-
-    }
-
-    // проверка статуса эпика при изменении подзадач
-    private void checkEpicStatus(Integer id) {
-        String epicStatus;   // текущий статус эпика
-        String firstSubtaskStatus;  // статус первой подзадачи в эпике
-
-        epicStatus = epics.get(id).getStatus();
-        if (epics.get(id).getSubtaskIds().isEmpty()) {
-            epicStatus = "NEW";    // эпик новый, если не содержит подзадач
-        }
-        else {
-            firstSubtaskStatus = subtasks.get(epics.get(id).getSubtaskIds().get(0)).getStatus();
-            for (Integer subtaskId : epics.get(id).getSubtaskIds()) {
-                String statusSubtask = subtasks.get(subtaskId).getStatus();
-                // если статус текущей подзадачи "IN_PROGRESS" или статус не соответствует первой подзадаче эпика,
-                // то статус эпика "IN_PROGRESS"
-                if (statusSubtask.equals("IN_PROGRESS") || !statusSubtask.equals(firstSubtaskStatus)) {
-                    epicStatus = "IN_PROGRESS";
-                    break;
-                }
-                epicStatus = firstSubtaskStatus;
-            }
-        }
-        epics.get(id).setStatus(epicStatus);
     }
 }

@@ -1,3 +1,10 @@
+package tracker;
+
+import tracker.controllers.TaskManager;
+import tracker.model.Epic;
+import tracker.model.Subtask;
+import tracker.model.Task;
+
 public class Main {
 
     public static void main(String[] args) {
@@ -20,11 +27,11 @@ public class Main {
         taskManager.addTask(firstEpic,0);
 
         Subtask firstSubtask = new Subtask("Заправить автомобиль",
-                "Съездить на АЗС","NEW", firstEpic.getTaskId());
+                "Съездить на АЗС","NEW", firstEpic);
         taskManager.addTask(firstSubtask,0);
 
         Subtask secondSubtask = new Subtask("Погрузить вещи в машину",
-                "Обязательно взять ключи от дачи","NEW", firstEpic.getTaskId());
+                "Обязательно взять ключи от дачи","NEW", firstEpic);
         taskManager.addTask(secondSubtask,0);
 
         // Создаем второй эпик и одну подзадачу
@@ -33,7 +40,7 @@ public class Main {
         taskManager.addTask(secondEpic,0);
 
         Subtask thirdSubtask = new Subtask("Скачать шаблон презентации",
-                "Взять стандартный шаблон","NEW", secondEpic.getTaskId());
+          "Взять стандартный шаблон","NEW", secondEpic);
         taskManager.addTask(thirdSubtask,0);
         taskManager.printAllTasks();
 
@@ -54,7 +61,8 @@ public class Main {
 
         // получение задачи по id
         System.out.println("Получаем задачу по ID");
-        taskManager.getTask(secondTask.getTaskId());
+        Task o = taskManager.getTask(secondTask.getTaskId());
+        System.out.println(o);
 
         // удаление подзадачи по id
         System.out.println("Удаляем подзадачу по ID");
