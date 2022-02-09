@@ -6,7 +6,7 @@ public class Epic extends Task {
 
     private ArrayList<Subtask> subtasksEpic;
 
-    public Epic(String name, String description, String status) {
+    public Epic(String name, String description, Status status) {
         super(name, description, status);
         subtasksEpic = new ArrayList<>();
     }
@@ -42,22 +42,22 @@ public class Epic extends Task {
 
     // проверка статуса эпика при изменении подзадач
     private void checkEpicStatus() {
-        String epicStatus;   // текущий статус эпика
-        String firstSubtaskStatus;  // статус первой подзадачи в эпике
+        Status epicStatus;   // текущий статус эпика
+        Status firstSubtaskStatus;  // статус первой подзадачи в эпике
 
         epicStatus = getStatus();
 
         if (getSubtasksEpic().isEmpty()) {
-            epicStatus = "NEW";    // эпик новый, если не содержит подзадач
+            epicStatus = Status.NEW;    // эпик новый, если не содержит подзадач
         }
         else {
             firstSubtaskStatus = subtasksEpic.get(0).getStatus();
             for (Subtask subtask : getSubtasksEpic()) {
-                String statusSubtask = subtask.getStatus();
+                Status statusSubtask = subtask.getStatus();
                 // если статус текущей подзадачи "IN_PROGRESS" или статус не соответствует первой подзадаче эпика,
                 // то статус эпика "IN_PROGRESS"
-                if (statusSubtask.equals("IN_PROGRESS") || !statusSubtask.equals(firstSubtaskStatus)) {
-                    epicStatus = "IN_PROGRESS";
+                if ((statusSubtask == Status.IN_PROGRESS) || (statusSubtask != firstSubtaskStatus)) {
+                    epicStatus = Status.IN_PROGRESS;
                     break;
                 }
                 epicStatus = firstSubtaskStatus;
