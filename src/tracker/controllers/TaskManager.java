@@ -2,13 +2,22 @@ package tracker.controllers;
 
 import tracker.model.*;
 
+import java.util.List;
+
 public interface TaskManager {
 
     // получение списка всех задач (пункт 2.1)
-    void printAllTasks();
+    List<Task> getAllTasks();      // оставил пока для тестирования программы
+    List<Task> getTasks();
+    List<Task> getEpics();
+    List<Task> getSubtasks();
+    List<Task> getEpicSubtasks(Epic epic); // (пункт 3.1)
 
     // удаление всех задач из менеджера (пункт 2.2)
     void clearAll();
+    void clearTasks();
+    void clearEpics();
+    void clearSubtasks();
 
     // получение задачи по идентификатору (пункт 2.3)
     Task getTask(Integer id);
@@ -18,9 +27,6 @@ public interface TaskManager {
 
     // удаление задачи по идентификатору (пункт 2.6)
     void deleteTask(Integer id);
-
-    // получение списка подзадач определеннного эпика (пункт 3.1)
-    void getEpicSubtasks(Epic epic);
 
     // вывод истории просмотров задач
     void printHistory();

@@ -7,6 +7,9 @@ import tracker.model.Subtask;
 import tracker.model.Task;
 import tracker.util.Managers;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Main {
 
     public static void main(String[] args) {
@@ -45,6 +48,28 @@ public class Main {
           "Взять стандартный шаблон",Status.NEW, secondEpic);
         taskManager.addTask(thirdSubtask,0);
 
+        // получаем все простые задачи из менеджера
+        System.out.println("Получаем все простые задачи из менеджера");
+        List<Task> tasks = taskManager.getTasks();
+        System.out.println(tasks);
+        // печатаем историю
+        taskManager.printHistory();
+
+        // получаем все эпики из менеджера
+        System.out.println("Получаем все эпики из менеджера");
+        List<Task> epics = taskManager.getEpics();
+        System.out.println(epics);
+        // печатаем историю
+        taskManager.printHistory();
+
+        // получаем все подзадачи из менеджера
+        System.out.println("Получаем все подзадачи из менеджера");
+        List<Task> subtasks = taskManager.getSubtasks();
+        System.out.println(subtasks);
+        // печатаем историю
+        taskManager.printHistory();
+
+
         // меняем статусы у простой задачи и подзадачи первого эпика
         System.out.println("Меняем статусы у простой задачи и подзадачи первого эпика");
 
@@ -57,7 +82,9 @@ public class Main {
         System.out.println("Меняем статус у подзадачи второго эпика");
         thirdSubtask.setStatus(Status.DONE);
         taskManager.addTask(thirdSubtask, thirdSubtask.getTaskId());
-        taskManager.printAllTasks();
+        List<Task> allTasks = taskManager.getAllTasks();
+        System.out.println("Печатаем полученный список всех задач");
+        System.out.println(allTasks);
 
         // получение задачи по id
         System.out.println("Получаем задачу по ID");
@@ -89,38 +116,50 @@ public class Main {
         System.out.println("Удаляем задачу по ID");
         taskManager.deleteTask(secondTask.getTaskId());
         taskManager.printHistory();
-        taskManager.printAllTasks();
+        taskManager.getAllTasks();
         taskManager.printHistory();
 
         // удаление подзадачи по id
         System.out.println("Удаляем подзадачу по ID");
         taskManager.deleteTask(secondSubtask.getTaskId());
         taskManager.printHistory();
-        taskManager.printAllTasks();
+        taskManager.getAllTasks();
         taskManager.printHistory();
 
         // возвращаем обратно
         System.out.println("Добавляем подзадачу обратно");
         taskManager.addTask(secondSubtask,0);
-        taskManager.printAllTasks();
+        taskManager.getAllTasks();
 
         System.out.println("Меняем статусы у подзадач первого эпика");
         firstSubtask.setStatus(Status.DONE);
         taskManager.addTask(firstSubtask, firstSubtask.getTaskId());
         secondSubtask.setStatus(Status.DONE);
         taskManager.addTask(secondSubtask, secondSubtask.getTaskId());
-        taskManager.printAllTasks();
+        taskManager.getAllTasks();
 
         // удаляем эпик по id
         System.out.println("Удаляем эпик по ID");
         taskManager.deleteTask(firstEpic.getTaskId());
         taskManager.printHistory();
-        taskManager.printAllTasks();
+        taskManager.getAllTasks();
 
         // удаляем все задачи
         System.out.println("Удаление всех задач...");
-        taskManager.clearAll();
-        taskManager.printAllTasks();
+        System.out.println("Удаление всех простых задач...");
+        taskManager.clearTasks();
         taskManager.printHistory();
+     //   taskManager.clearAll();
+        taskManager.getAllTasks();
+        taskManager.printHistory();
+        System.out.println("Удаление всех подзадач...");
+        taskManager.clearSubtasks();
+        taskManager.printHistory();
+        taskManager.getAllTasks();
+        taskManager.printHistory();
+        System.out.println("Удаление всех эпиков...");
+        taskManager.clearEpics();
+        taskManager.printHistory();
+        taskManager.getAllTasks();
     }
 }

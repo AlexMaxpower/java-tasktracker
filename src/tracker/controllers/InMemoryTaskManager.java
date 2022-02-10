@@ -1,5 +1,6 @@
 package tracker.controllers;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import tracker.model.*;
@@ -35,14 +36,16 @@ public class InMemoryTaskManager implements TaskManager{
     }
 
 
-    // получение списка всех задач (пункт 2.1)
+    // получение списка всех задач
     @Override
-    public void printAllTasks() {
+    public List<Task> getAllTasks() {
+        List<Task> resultAllTasks = new ArrayList<>();
         System.out.println("");
         System.out.println("Задачи:");
         System.out.println("----");
 
         for (Task task : tasks.values()) {
+            resultAllTasks.add(task);
             historyManager.add(task);
             System.out.println(task);
         }
@@ -52,12 +55,60 @@ public class InMemoryTaskManager implements TaskManager{
         System.out.println("----");
 
         for (Epic epic : epics.values()) {
+            resultAllTasks.add(epic);
             historyManager.add(epic);
             System.out.println(epic);
-            getEpicSubtasks(epic);
+            List<Task> epicSubtasks = getEpicSubtasks(epic);
+            resultAllTasks.addAll(epicSubtasks);
         }
 
         System.out.println("");
+        return resultAllTasks;
+    }
+
+    // получение списка всех простых задач из менеджера
+    @Override
+    public List<Task> getTasks() {
+        List<Task> resultTasks = new ArrayList<>();
+        for (Task task : tasks.values()) {
+            resultTasks.add(task);
+            historyManager.add(task);
+        }
+        return resultTasks;
+    }
+
+    // получение списка всех эпиков из менеджера
+    @Override
+    public List<Task> getEpics() {
+        List<Task> resultEpics = new ArrayList<>();
+        for (Task epic : epics.values()) {
+            resultEpics.add(epic);
+            historyManager.add(epic);
+        }
+        return resultEpics;
+    }
+
+    // получение списка всех подзадач из менеджера
+    @Override
+    public List<Task> getSubtasks() {
+        List<Task> resultSubtasks = new ArrayList<>();
+        for (Task subtask : subtasks.values()) {
+            resultSubtasks.add(subtask);
+            historyManager.add(subtask);
+        }
+        return resultSubtasks;
+    }
+
+    // получение списка подзадач определеннного эпика (пункт 3.1)
+    @Override
+    public List<Task> getEpicSubtasks(Epic epic) {
+        List<Task> resultSubtasks = new ArrayList<>();
+        for (Subtask subtask : epic.getSubtasksEpic()) {
+            resultSubtasks.add(subtask);
+            historyManager.add(subtask);
+            System.out.println(subtask);
+        }
+        return resultSubtasks;
     }
 
     // удаление всех задач из менеджера (пункт 2.2)
@@ -68,6 +119,40 @@ public class InMemoryTaskManager implements TaskManager{
         subtasks.clear();
         epics.clear();
         historyManager.clearHistory();
+    }
+
+    // удаление всех простых задач из менеджера
+    @Override
+    public void clearTasks() {
+        for (Integer id : tasks.keySet()) {
+            historyManager.removeTaskFromHistoryById(id);
+        }
+        tasks.clear();
+    }
+
+    // удаление всех подзадач из менеджера
+    @Override
+    public void clearSubtasks() {
+        // удаляем просмотры подзадач из истории
+        for (Integer id : subtasks.keySet()) {
+            historyManager.removeTaskFromHistoryById(id);
+        }
+        // удаляем подзадачи из эпиков
+        for (Subtask subtask : subtasks.values()) {
+            subtask.getEpic().deleteSubtask(subtask);
+        }
+        subtasks.clear();
+    }
+
+    // удаление всех эпиков из менеджера
+    @Override
+    public void clearEpics() {
+        // сначала удаляем все подзадачи, так как без эпиков подзадачи не существуют
+        clearSubtasks();
+        for (Integer id : epics.keySet()) {
+            historyManager.removeTaskFromHistoryById(id);
+        }
+        epics.clear();
     }
 
     // получение задачи по идентификатору (пункт 2.3)
@@ -135,15 +220,6 @@ public class InMemoryTaskManager implements TaskManager{
             }
             epics.remove(id);
             historyManager.removeTaskFromHistoryById(id);
-        }
-    }
-
-    // получение списка подзадач определеннного эпика (пункт 3.1)
-    @Override
-    public void getEpicSubtasks(Epic epic) {
-        for (Subtask subtask : epic.getSubtasksEpic()) {
-            historyManager.add(subtask);
-            System.out.println(subtask);
         }
     }
 
