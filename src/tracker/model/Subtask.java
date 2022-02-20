@@ -16,7 +16,7 @@ public class Subtask extends Task {
     @Override
     public String toString() {
 
-        return  "  - " + super.getName() +
+        return  super.getName() +
                 ": " + super.getDescription() +
                 " (" + super.getStatus() +
                 ", ID=" + super.getTaskId() +

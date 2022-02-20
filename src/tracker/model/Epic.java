@@ -1,10 +1,11 @@
 package tracker.model;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class Epic extends Task {
 
-    private ArrayList<Subtask> subtasksEpic;
+    private List<Subtask> subtasksEpic;
 
     public Epic(String name, String description, Status status) {
         super(name, description, status);
@@ -13,7 +14,7 @@ public class Epic extends Task {
 
     @Override
     public String toString() {
-        ArrayList<Integer> subtaskIds  = new ArrayList<>();
+        List<Integer> subtaskIds  = new ArrayList<>();
         for (Subtask subtask : subtasksEpic) {
             subtaskIds.add(subtask.getTaskId());
         }
@@ -26,7 +27,7 @@ public class Epic extends Task {
         return result.toUpperCase();
     }
 
-    public ArrayList<Subtask> getSubtasksEpic() {
+    public List<Subtask> getSubtasksEpic() {
         return subtasksEpic;
     }
 

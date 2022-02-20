@@ -3,13 +3,15 @@ package tracker.controllers;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 import tracker.model.*;
 import tracker.util.Managers;
 
 public class InMemoryTaskManager implements TaskManager{
-    private HashMap<Integer, Task> tasks;
-    private HashMap<Integer, Subtask> subtasks;
-    private HashMap<Integer, Epic> epics;
+    private Map<Integer, Task> tasks;
+    private Map<Integer, Subtask> subtasks;
+    private Map<Integer, Epic> epics;
     private int currentId;   // текущий идентификационный номер задачи
 
     HistoryManager historyManager;
@@ -36,7 +38,7 @@ public class InMemoryTaskManager implements TaskManager{
     }
 
 
-    // получение списка всех задач
+    // получение списка всех задач (вывод в терминал для отладки)
     @Override
     public List<Task> getAllTasks() {
         List<Task> resultAllTasks = new ArrayList<>();
@@ -46,7 +48,6 @@ public class InMemoryTaskManager implements TaskManager{
 
         for (Task task : tasks.values()) {
             resultAllTasks.add(task);
-            historyManager.add(task);
             System.out.println(task);
         }
 
@@ -56,7 +57,6 @@ public class InMemoryTaskManager implements TaskManager{
 
         for (Epic epic : epics.values()) {
             resultAllTasks.add(epic);
-            historyManager.add(epic);
             System.out.println(epic);
             List<Task> epicSubtasks = getEpicSubtasks(epic);
             resultAllTasks.addAll(epicSubtasks);
@@ -72,7 +72,6 @@ public class InMemoryTaskManager implements TaskManager{
         List<Task> resultTasks = new ArrayList<>();
         for (Task task : tasks.values()) {
             resultTasks.add(task);
-            historyManager.add(task);
         }
         return resultTasks;
     }
@@ -83,7 +82,6 @@ public class InMemoryTaskManager implements TaskManager{
         List<Task> resultEpics = new ArrayList<>();
         for (Task epic : epics.values()) {
             resultEpics.add(epic);
-            historyManager.add(epic);
         }
         return resultEpics;
     }
@@ -94,7 +92,6 @@ public class InMemoryTaskManager implements TaskManager{
         List<Task> resultSubtasks = new ArrayList<>();
         for (Task subtask : subtasks.values()) {
             resultSubtasks.add(subtask);
-            historyManager.add(subtask);
         }
         return resultSubtasks;
     }
@@ -105,8 +102,6 @@ public class InMemoryTaskManager implements TaskManager{
         List<Task> resultSubtasks = new ArrayList<>();
         for (Subtask subtask : epic.getSubtasksEpic()) {
             resultSubtasks.add(subtask);
-            historyManager.add(subtask);
-            System.out.println(subtask);
         }
         return resultSubtasks;
     }
@@ -118,14 +113,13 @@ public class InMemoryTaskManager implements TaskManager{
         tasks.clear();
         subtasks.clear();
         epics.clear();
-        historyManager.clearHistory();
     }
 
     // удаление всех простых задач из менеджера
     @Override
     public void clearTasks() {
         for (Integer id : tasks.keySet()) {
-            historyManager.removeTaskFromHistoryById(id);
+            historyManager.remove(id);
         }
         tasks.clear();
     }
@@ -135,7 +129,7 @@ public class InMemoryTaskManager implements TaskManager{
     public void clearSubtasks() {
         // удаляем просмотры подзадач из истории
         for (Integer id : subtasks.keySet()) {
-            historyManager.removeTaskFromHistoryById(id);
+            historyManager.remove(id);
         }
         // удаляем подзадачи из эпиков
         for (Subtask subtask : subtasks.values()) {
@@ -150,7 +144,7 @@ public class InMemoryTaskManager implements TaskManager{
         // сначала удаляем все подзадачи, так как без эпиков подзадачи не существуют
         clearSubtasks();
         for (Integer id : epics.keySet()) {
-            historyManager.removeTaskFromHistoryById(id);
+            historyManager.remove(id);
         }
         epics.clear();
     }
@@ -205,36 +199,40 @@ public class InMemoryTaskManager implements TaskManager{
     public void deleteTask(Integer id) {
         if (tasks.containsKey(id)) {
             tasks.remove(id);
-            historyManager.removeTaskFromHistoryById(id);
+            historyManager.remove(id);
         }
         else if (subtasks.containsKey(id)) {      // ищем id в подзадачах и если есть, то удаляем также из эпика
             Epic epic = subtasks.get(id).getEpic();
             epic.deleteSubtask(subtasks.get(id));
             subtasks.remove(id);
-            historyManager.removeTaskFromHistoryById(id);
+            historyManager.remove(id);
         }
         else if (epics.containsKey(id)) {         // ищем id в эпиках и если есть, то удаляем также подзадачи
             for (Subtask subtask: epics.get(id).getSubtasksEpic()) {
                 subtasks.remove(subtask);
-                historyManager.removeTaskFromHistoryById(subtask.getTaskId());
+                historyManager.remove(subtask.getTaskId());
             }
             epics.remove(id);
-            historyManager.removeTaskFromHistoryById(id);
+            historyManager.remove(id);
         }
     }
 
     @Override
-    public void printHistory() {
-        System.out.println("Печатаем историю");
-        List<Task> historyList = historyManager.getHistory();
-        int i = 0; // вспомогательная переменная для вывода стрелочки
-        for (Task historyObject : historyList) {
-            if (i != 0) {
-                System.out.print(" -> "); // печатаем стрелочку, если не первый элемент списка
+    public List<Task> history() {
+        System.out.print("Печатаем историю: ");
+        List<Task> historyList = new ArrayList<>();
+        historyList = historyManager.getHistory();
+        if (historyList != null) {
+            int i = 0; // вспомогательная переменная для вывода стрелочки
+            for (Task historyObject : historyList) {
+                if (i != 0) {
+                    System.out.print(" -> "); // печатаем стрелочку, если не первый элемент списка
+                }
+                i++;
+                System.out.print(historyObject.getTaskId());
             }
-            i++;
-            System.out.print(historyObject.getTaskId());
+            System.out.println("");
         }
-        System.out.println("");
+        return historyList;
     }
 }

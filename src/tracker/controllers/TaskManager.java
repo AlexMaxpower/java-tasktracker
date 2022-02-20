@@ -29,5 +29,5 @@ public interface TaskManager {
     void deleteTask(Integer id);
 
     // вывод истории просмотров задач
-    void printHistory();
+    List<Task> history();
 }
