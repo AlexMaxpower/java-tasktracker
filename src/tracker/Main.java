@@ -90,6 +90,11 @@ public class Main {
         taskManager.deleteTask(firstEpic.getTaskId());
         taskManager.history();
 
+        // удаляем все задачи, подзадачи и эпики
+        System.out.println("Удаляем все задачи, подзадачи и эпики");
+        taskManager.clearAll();
+        taskManager.history();
+
         /*
         // меняем статусы у простой задачи и подзадачи первого эпика
         System.out.println("Меняем статусы у простой задачи и подзадачи первого эпика");

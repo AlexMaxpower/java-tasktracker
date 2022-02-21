@@ -9,7 +9,6 @@ public class InMemoryHistoryManager implements HistoryManager {
 
     private Map<Integer, Node> historyMap;
     private HistoryLinkedList<Task> historyLinkedList;
-    private static final int MAX_VIEWS = 10;  // максимальное количество хранимых в истории задач
 
     public InMemoryHistoryManager() {
         historyMap = new HashMap<>();
@@ -18,11 +17,6 @@ public class InMemoryHistoryManager implements HistoryManager {
 
     @Override
     public void add(Task task) {
-        // если история просмотров заполнена - удаляем самую старую задачу
-        if (historyLinkedList.size() >= MAX_VIEWS) {
-            remove(historyLinkedList.getFirst().getTaskId());
-        }
-
         if (historyMap.containsKey(task.getTaskId())) {
             Node<Task> deleteNode = historyMap.get(task.getTaskId());
             historyLinkedList.removeNode(deleteNode);

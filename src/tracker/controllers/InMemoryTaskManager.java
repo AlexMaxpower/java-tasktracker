@@ -110,9 +110,8 @@ public class InMemoryTaskManager implements TaskManager{
     @Override
     public void clearAll() {
         currentId = 0;
-        tasks.clear();
-        subtasks.clear();
-        epics.clear();
+        clearTasks();
+        clearEpics();  // после удаления всех эпиков, подзадач тоже не будет
     }
 
     // удаление всех простых задач из менеджера
