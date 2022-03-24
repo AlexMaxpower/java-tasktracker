@@ -9,9 +9,9 @@ import tracker.model.*;
 import tracker.util.Managers;
 
 public class InMemoryTaskManager implements TaskManager{
-    private Map<Integer, Task> tasks;
-    private Map<Integer, Subtask> subtasks;
-    private Map<Integer, Epic> epics;
+    protected Map<Integer, Task> tasks;
+    protected Map<Integer, Subtask> subtasks;
+    protected Map<Integer, Epic> epics;
     private int currentId;   // текущий идентификационный номер задачи
 
     HistoryManager historyManager;
@@ -59,6 +59,9 @@ public class InMemoryTaskManager implements TaskManager{
             resultAllTasks.add(epic);
             System.out.println(epic);
             List<Task> epicSubtasks = getEpicSubtasks(epic);
+            for (Task subtask : epicSubtasks) {
+                System.out.println(subtask);
+            }
             resultAllTasks.addAll(epicSubtasks);
         }
 
@@ -76,7 +79,6 @@ public class InMemoryTaskManager implements TaskManager{
         return resultTasks;
     }
 
-    // получение списка всех эпиков из менеджера
     @Override
     public List<Task> getEpics() {
         List<Task> resultEpics = new ArrayList<>();

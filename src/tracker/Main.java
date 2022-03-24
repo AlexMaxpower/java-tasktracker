@@ -1,5 +1,6 @@
 package tracker;
 
+import tracker.controllers.FileBackedTasksManager;
 import tracker.controllers.TaskManager;
 import tracker.model.Epic;
 import tracker.model.Status;
@@ -7,18 +8,22 @@ import tracker.model.Subtask;
 import tracker.model.Task;
 import tracker.util.Managers;
 
+import java.io.File;
+
 public class Main {
 
     public static void main(String[] args) {
 
-        TaskManager taskManager = Managers.getDefault();
-
+    //    TaskManager taskManager = Managers.getDefault();
+    //    TaskManager taskManager = new FileBackedTasksManager("src/tracker/resources/tasksdata.csv");
+        //FileBackedTasksManager taskManager = FileBackedTasksManager.loadFromFile(new File("src/tracker/resources/tasksdata.csv"));
+        FileBackedTasksManager.main(null);
         // Далее код только для тестирования работы программы
-
+/*
         Task o;
 
         // Создаем две задачи
-        Task firstTask = new Task("Сходить в магазин", "Купить хлеб, молоко, сыр", Status.NEW);
+        Task firstTask = new Task("Сходить в магазин", "Купить хлеб и молоко", Status.NEW);
         Task secondTask = new Task("Полить цветы", "Полить цветы в гостиной и спальне", Status.NEW);
 
         // Добавляем задачи в менеджер
@@ -53,7 +58,6 @@ public class Main {
         System.out.println("Получаем вторую подзадачу по ID");
         o = taskManager.getTask(secondSubtask.getTaskId());
         System.out.println(o);
-        taskManager.history();
 
         System.out.println("Получаем первую задачу по ID");
         o = taskManager.getTask(firstTask.getTaskId());
@@ -80,20 +84,27 @@ public class Main {
         System.out.println(o);
         taskManager.history();
 
+     //   FileBackedTasksManager.main(null);
+
+        taskManager.getAllTasks();
         // удаляем вторую задачу по id
         System.out.println("Удаляем вторую задачу по ID");
         taskManager.deleteTask(secondTask.getTaskId());
-        taskManager.history();
-
+        taskManager.history(); */
+ /*
         // удаляем первый эпик по id
         System.out.println("Удаляем первый эпик по ID");
         taskManager.deleteTask(firstEpic.getTaskId());
         taskManager.history();
 
+
+
         // удаляем все задачи, подзадачи и эпики
         System.out.println("Удаляем все задачи, подзадачи и эпики");
         taskManager.clearAll();
         taskManager.history();
+
+*/
 
         /*
         // меняем статусы у простой задачи и подзадачи первого эпика
