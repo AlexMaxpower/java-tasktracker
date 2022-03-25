@@ -2,7 +2,6 @@ package tracker.controllers;
 
 import tracker.model.*;
 import tracker.exceptions.ManagerSaveException;
-import tracker.util.Managers;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -10,7 +9,7 @@ import java.util.*;
 
 import static tracker.model.TypeTask.TASK;
 
-public class FileBackedTasksManager extends InMemoryTaskManager implements TaskManager {
+public class FileBackedTasksManager extends InMemoryTaskManager {
 
     private String filename;
 
@@ -134,11 +133,7 @@ public class FileBackedTasksManager extends InMemoryTaskManager implements TaskM
             fileWriter.write(strBuilder.toString());
 
         } catch (IOException e) {
-            try {
                 throw new ManagerSaveException("Произошла ошибка во время записи файла!");
-            } catch (ManagerSaveException ex) {
-                ex.printStackTrace();
-            }
         }
          //   System.out.println(strBuilder.toString());
     }
@@ -203,7 +198,7 @@ public class FileBackedTasksManager extends InMemoryTaskManager implements TaskM
                     break;
                 }
 
-                task = FromString(line);
+                task = fromString(line);
                 taskList.add(task);
             }
 
@@ -222,7 +217,7 @@ public class FileBackedTasksManager extends InMemoryTaskManager implements TaskM
             return new FileBackedTasksManager(file.getPath(), taskList, historyIdTasks);
     }
 
-    private static Task FromString(String value) throws IllegalArgumentException {
+    private static Task fromString(String value) throws IllegalArgumentException {
         String[] split = value.split(",");
         Status status;
 
