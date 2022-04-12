@@ -8,6 +8,7 @@ public interface TaskManager {
 
     // получение списка всех задач (пункт 2.1)
     List<Task> getAllTasks();      // оставил пока для тестирования программы
+    List<Task> getPrioritizedTasks(); // возвращает отсортированный по старту список задач
     List<Task> getTasks();
     List<Task> getEpics();
     List<Task> getSubtasks();
@@ -23,7 +24,7 @@ public interface TaskManager {
     Task getTask(Integer id);
 
     // добавляем или обновляем задачу/подзадачу/эпик в менеджер (пункты 2.4 и 2.5)
-    void addTask(Task o, Integer id);
+    int addTask(Task o, Integer id);
 
     // удаление задачи по идентификатору (пункт 2.6)
     void deleteTask(Integer id);

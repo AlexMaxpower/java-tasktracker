@@ -1,15 +1,22 @@
 package tracker.model;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class Epic extends Task {
 
     private List<Subtask> subtasksEpic;
+    private Optional<LocalDateTime> endTime;
 
     public Epic(String name, String description, Status status) {
         super(name, description, status);
+        endTime = Optional.empty();
         subtasksEpic = new ArrayList<>();
+        checkEpicStatus();
     }
 
     @Override
@@ -18,11 +25,27 @@ public class Epic extends Task {
         for (Subtask subtask : subtasksEpic) {
             subtaskIds.add(subtask.getTaskId());
         }
-        String result = super.getName() +
-                ": " + super.getDescription() +
-                " (" + super.getStatus() +
-                ", id=" + super.getTaskId() +
+
+        String endTimeStr = "empty";
+        String startTimeStr = "empty";;
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy-HH:mm");
+
+        if (getStartTime().isPresent()) {
+            startTimeStr = getStartTime().get().format(formatter);
+        }
+
+        if (endTime.isPresent()) {
+            endTimeStr = endTime.get().format(formatter);
+        }
+
+        String result = getName() +
+                ": " + getDescription() +
+                " (" + getStatus() +
+                ", id=" + getTaskId() +
                 ", subIds=" + subtaskIds +
+                ", start=" + startTimeStr +
+                ", duration=" + getDuration().toMinutes() + "m" +
+                ", end=" + endTimeStr +
                 ")";
         return result.toUpperCase();
     }
@@ -34,11 +57,13 @@ public class Epic extends Task {
     public void addSubtaskEpic(Subtask subtask) {
         subtasksEpic.add(subtask);
         checkEpicStatus();
+        checkEpicTime();
     }
 
     public void deleteSubtask(Subtask subtask) {
         subtasksEpic.remove(subtask);
         checkEpicStatus();
+        checkEpicTime();
     }
 
     // проверка статуса эпика при изменении подзадач
@@ -65,5 +90,50 @@ public class Epic extends Task {
             }
         }
         setStatus(epicStatus);
+    }
+
+    // проверка времени эпика при изменении подзадач
+    private void checkEpicTime() {
+
+        Optional<LocalDateTime> startTimeEpic = Optional.empty();
+        Optional<LocalDateTime> endTimeEpic = Optional.empty();
+        Duration durationSummary = Duration.ZERO;
+
+        if (!getSubtasksEpic().isEmpty()) {
+            startTimeEpic = subtasksEpic.get(0).getStartTime();
+
+            for (Subtask subtask : getSubtasksEpic()) {
+                Optional<LocalDateTime> startTimeSubtask = subtask.getStartTime();
+                Duration durationSubtask = subtask.getDuration();
+
+                durationSummary = durationSummary.plus(durationSubtask);
+
+                if (startTimeEpic.isEmpty() && startTimeSubtask.isPresent()) {
+                    startTimeEpic = startTimeSubtask;
+                    endTimeEpic = Optional.of(startTimeSubtask.get().plus(durationSubtask));
+                } else {
+                    if (startTimeSubtask.isPresent()) {
+                        if (startTimeEpic.get().isAfter(startTimeSubtask.get())) {
+                            startTimeEpic = startTimeSubtask;
+                        }
+                        if (endTimeEpic.isEmpty()) {
+                            endTimeEpic = Optional.of(startTimeSubtask.get().plus(durationSubtask));
+                        } else if (endTimeEpic.get().isBefore(startTimeSubtask.get().plus(durationSubtask))) {
+                                endTimeEpic = Optional.of(startTimeSubtask.get().plus(durationSubtask));
+                            }
+
+                    }
+                }
+            }
+
+        }
+        setStartTime(startTimeEpic);
+        setDuration(durationSummary);
+        endTime = endTimeEpic;
+    }
+
+    @Override
+    public Optional<LocalDateTime> getEndTime() {
+        return endTime;
     }
 }

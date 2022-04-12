@@ -45,13 +45,13 @@ public class InMemoryHistoryManager implements HistoryManager {
 
         private int size = 0;
 
-        public T getFirst() {
+    /*    public T getFirst() {
             Node<T> curHead = head;
             if (curHead == null) {
                 return null;
             }
             return head.data;
-        }
+        }*/
 
         public Node<T> linkLast(T element) {
             Node<T> oldTail = tail;
@@ -96,9 +96,9 @@ public class InMemoryHistoryManager implements HistoryManager {
             size--;
         }
 
-        public int size() {
+   /*     public int size() {
             return this.size;
-        }
+        }*/
 
         public List<Task> getTasks() {
             List<Task> historyTasks = new ArrayList<>();

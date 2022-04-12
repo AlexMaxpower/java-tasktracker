@@ -9,17 +9,21 @@ import tracker.model.Task;
 import tracker.util.Managers;
 
 import java.io.File;
+import java.time.Duration;
+import java.time.LocalDateTime;
+
+import static tracker.model.Status.NEW;
 
 public class Main {
 
     public static void main(String[] args) {
 
-    //    TaskManager taskManager = Managers.getDefault();
+        TaskManager taskManager = Managers.getDefault();
     //    TaskManager taskManager = new FileBackedTasksManager("src/tracker/resources/tasksdata.csv");
         //FileBackedTasksManager taskManager = FileBackedTasksManager.loadFromFile(new File("src/tracker/resources/tasksdata.csv"));
-        FileBackedTasksManager.main(null);
+     //   FileBackedTasksManager.main(null);
         // Далее код только для тестирования работы программы
-/*
+
         Task o;
 
         // Создаем две задачи
@@ -30,21 +34,29 @@ public class Main {
         taskManager.addTask(firstTask,0);
         taskManager.addTask(secondTask,0);
 
+        LocalDateTime startTime = LocalDateTime.of(2022,04,01,1,20);
+        Duration duration = Duration.ofMinutes(20);
+
+
+
+
         // Создаем эпик и три подзадачи
         Epic firstEpic = new Epic("Съездить на дачу",
                 "В выходные необходимо заехать на дачу на автомобиле", Status.NEW);
         taskManager.addTask(firstEpic,0);
 
         Subtask firstSubtask = new Subtask("Заправить автомобиль",
-                "Съездить на АЗС",Status.NEW, firstEpic);
+                "Съездить на АЗС", NEW, firstEpic,startTime, duration );
         taskManager.addTask(firstSubtask,0);
 
         Subtask secondSubtask = new Subtask("Погрузить вещи в машину",
-                "Забрать все ненужное :)",Status.NEW, firstEpic);
+                "Забрать все ненужное :)", NEW, firstEpic);
         taskManager.addTask(secondSubtask,0);
 
         Subtask thirdSubtask = new Subtask("Взять ключи от дачи",
-                "Обязательно взять ключи от дачи",Status.NEW, firstEpic);
+                "Обязательно взять ключи от дачи", NEW, firstEpic, startTime.plusDays(2).plusHours(4),
+                Duration.ofMinutes(30));
+        System.out.println("!" + thirdSubtask.toString());
         taskManager.addTask(thirdSubtask,0);
 
         // Создаем второй эпик без подзадач
@@ -87,10 +99,11 @@ public class Main {
      //   FileBackedTasksManager.main(null);
 
         taskManager.getAllTasks();
+        taskManager.getPrioritizedTasks();
         // удаляем вторую задачу по id
         System.out.println("Удаляем вторую задачу по ID");
         taskManager.deleteTask(secondTask.getTaskId());
-        taskManager.history(); */
+        taskManager.history();
  /*
         // удаляем первый эпик по id
         System.out.println("Удаляем первый эпик по ID");
@@ -225,12 +238,16 @@ public class Main {
 
          */
 
-        /*
+
         // Создаем еще задачи
-        Task thirdTask = new Task("Сходить в гараж", "Забрать инструменты", Status.NEW);
+        Task thirdTask = new Task("Сходить в гараж", "Забрать инструменты", Status.NEW,
+                startTime.minusDays(2).plusHours(5),
+                Duration.ofMinutes(40));
         Task fourthTask = new Task("Убрать квартиру", "Ковер в детской", Status.NEW);
         Task fifthTask = new Task("Покрасить забор", "Краска на балконе", Status.NEW);
-        Task sixthTask = new Task("Купить принтер", "Уточнить наличие в магазине", Status.NEW);
+        Task sixthTask = new Task("Купить принтер", "Уточнить наличие в магазине", Status.NEW,
+                startTime.plusDays(6).plusHours(1),
+                Duration.ofMinutes(120));
         Task seventhTask = new Task("Сдать домашку", "Отправить работу на проверку", Status.NEW);
 
         taskManager.addTask(thirdTask,0);
@@ -239,10 +256,12 @@ public class Main {
         taskManager.addTask(sixthTask,0);
         taskManager.addTask(seventhTask,0);
 
-        Subtask thirdSubtask = new Subtask("Скачать шаблон презентации",
+        thirdSubtask = new Subtask("Скачать шаблон презентации",
           "Взять стандартный шаблон",Status.NEW, secondEpic);
         taskManager.addTask(thirdSubtask,0);
 
-         */
+         taskManager.getPrioritizedTasks();
+
+
     }
 }

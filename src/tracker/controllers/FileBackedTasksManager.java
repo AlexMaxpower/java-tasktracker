@@ -5,8 +5,12 @@ import tracker.exceptions.ManagerSaveException;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+import static tracker.model.Status.NEW;
 import static tracker.model.TypeTask.TASK;
 
 public class FileBackedTasksManager extends InMemoryTaskManager {
@@ -21,13 +25,21 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
         for (Task task : taskList) {
             if (task.getClass() == Task.class) {
                 super.tasks.put(task.getTaskId(), task);
+                super.treeSetTasks.add(task);
             } else if (task.getClass() == Subtask.class) {
-
                 // добавляем вместо эпика-пустышки настоящий эпик
-                Task subtask = new Subtask(task.getName(), task.getDescription(),
-                        task.getStatus(), super.epics.get(((Subtask) task).getEpic().getTaskId()));
+                Epic epic = super.epics.get(((Subtask) task).getEpic().getTaskId());
+                Task subtask;
+                if (task.getStartTime().isEmpty()) {
+                    subtask = new Subtask(task.getName(), task.getDescription(),
+                        task.getStatus(), epic);
+                } else {
+                    subtask = new Subtask(task.getName(), task.getDescription(),
+                            task.getStatus(), epic, task.getStartTime().get(), task.getDuration());
+                }
                 subtask.setTaskId(task.getTaskId());
                 super.subtasks.put(task.getTaskId(), (Subtask) subtask);
+                super.treeSetTasks.add(subtask);
                 // добавляем сабтаск в эпик
                 super.epics.get(((Subtask) task).getEpic().getTaskId()).addSubtaskEpic((Subtask) subtask);
 
@@ -38,7 +50,6 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
                 maxId = task.getTaskId();
             }
             super.setCurrentId(maxId);
-
         }
 
         for (Integer id : historyIdTasks) {
@@ -46,32 +57,36 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
         }
     }
 
-    public static void main(String[] args) {
+ /*   public static void main(String[] args) {
 
         FileBackedTasksManager testManager = loadFromFile(new File("src/tracker/resources/tasksdata.csv"));
 
-        Task firstTask = new Task("Купить клавиатуру", "Обязательно", Status.NEW);
+        LocalDateTime startTime = LocalDateTime.of(2022,04,01,1,20);
+        Duration duration = Duration.ofMinutes(20);
+
+        Task firstTask = new Task("Купить клавиатуру", "Обязательно", NEW, startTime, duration);
         testManager.addTask(firstTask,0);
 
-        Task secondTask = new Task("Полить цветы", "Полить цветы в гостиной и спальне", Status.NEW);
+        Task secondTask = new Task("Полить цветы", "Полить цветы в гостиной и спальне", NEW);
 
         testManager.addTask(secondTask,0);
 
         // Создаем эпик и три подзадачи
         Epic firstEpic = new Epic("Съездить на дачу",
-                "В выходные необходимо заехать на дачу на автомобиле", Status.NEW);
+                "В выходные необходимо заехать на дачу на автомобиле", NEW);
         testManager.addTask(firstEpic,0);
 
         Subtask firstSubtask = new Subtask("Заправить автомобиль",
-                "Съездить на АЗС",Status.NEW, firstEpic);
+                "Съездить на АЗС", NEW, firstEpic, startTime.plusDays(2).plusHours(4),
+                Duration.ofMinutes(30));
         testManager.addTask(firstSubtask,0);
 
         Subtask secondSubtask = new Subtask("Погрузить вещи в машину",
-                "Забрать все ненужное :)",Status.NEW, firstEpic);
+                "Забрать все ненужное :)", NEW, firstEpic);
         testManager.addTask(secondSubtask,0);
 
         Subtask thirdSubtask = new Subtask("Взять ключи от дачи",
-                "Обязательно взять ключи от дачи",Status.NEW, firstEpic);
+                "Обязательно взять ключи от дачи", NEW, firstEpic);
         testManager.addTask(thirdSubtask,0);
 
         Task o;
@@ -101,8 +116,9 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
 
         testManagerNew.getAllTasks();
         testManagerNew.history();
+        testManagerNew.getPrioritizedTasks();
     }
-
+*/
     private void save() {
         StringBuilder strBuilder = new StringBuilder();
         List<Task> resultAllTasks = new ArrayList<>();
@@ -120,7 +136,7 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
                 resultAllTasks.addAll(epicSubtasks);
             }
 
-        strBuilder.append("id,type,name,status,description,epic\n");
+        strBuilder.append("id,type,name,status,description,epic,date-time,duration\n");
         for (Task task : resultAllTasks) {
                 strBuilder.append(toString(task)+"\n");
             }
@@ -159,7 +175,13 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
         strBuilder.append(task.getDescription() + ",");
 
         if (task.getClass() == Subtask.class) {
-            strBuilder.append(Integer.toString(((Subtask) task).getEpic().getTaskId()));
+            strBuilder.append(Integer.toString(((Subtask) task).getEpic().getTaskId()) + ",");
+        }
+
+        if ((task.getStartTime().isPresent()) && (task.getClass() != Epic.class)) {
+            strBuilder.append(task.getStartTime().get().format( DateTimeFormatter.ofPattern("dd.MM.yyyy-HH:mm"))
+                    + ",");
+            strBuilder.append(task.getDuration().toMinutes() + ",");
         }
 
         return strBuilder.toString();
@@ -223,7 +245,7 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
 
         switch (split[3]) {
             case "NEW":
-                status = Status.NEW;
+                status = NEW;
                 break;
             case "IN_PROGRESS":
                 status = Status.IN_PROGRESS;
@@ -240,18 +262,34 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
 
         switch (split[1]) {
             case "TASK":
-                task = new Task(split[2], split[4], status);
+                if (split.length > 5) {
+                    LocalDateTime taskTime = LocalDateTime.parse(split[5],
+                            DateTimeFormatter.ofPattern("dd.MM.yyyy-HH:mm"));
+                    task = new Task(split[2], split[4], status, taskTime,
+                            Duration.ofMinutes(Long.parseLong(split[6].trim())));
+                } else {
+                    task = new Task(split[2], split[4], status);
+                }
                 task.setTaskId(taskId);
                 break;
+
             case "EPIC":
                 task = new Epic(split[2], split[4], status);
                 task.setTaskId(taskId);
                 break;
+
             case "SUBTASK":
                 int epicId = Integer.parseInt(split[5].trim());
-                Epic epic = new Epic("","",Status.NEW); // пустышка для передачи EpicId
+                Epic epic = new Epic("","", NEW); // пустышка для передачи EpicId
                 epic.setTaskId(epicId);
-                task = new Subtask(split[2], split[4], status, epic);
+                if (split.length > 6) {
+                    LocalDateTime taskTime = LocalDateTime.parse(split[6],
+                            DateTimeFormatter.ofPattern("dd.MM.yyyy-HH:mm"));
+                    task = new Subtask(split[2], split[4], status, epic, taskTime,
+                            Duration.ofMinutes(Long.parseLong(split[7].trim())));
+                } else {
+                    task = new Subtask(split[2], split[4], status, epic);
+                }
                 task.setTaskId(taskId);
                 break;
             default:
@@ -295,9 +333,10 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
     }
 
     @Override
-    public void addTask(Task o, Integer id) {
-        super.addTask(o, id);
+    public int addTask(Task o, Integer id) {
+        int taskId = super.addTask(o, id);
         save();
+        return taskId;
     }
 
     @Override
