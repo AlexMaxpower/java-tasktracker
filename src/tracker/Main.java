@@ -19,9 +19,8 @@ public class Main {
     public static void main(String[] args) {
 
         TaskManager taskManager = Managers.getDefault();
-    //    TaskManager taskManager = new FileBackedTasksManager("src/tracker/resources/tasksdata.csv");
         //FileBackedTasksManager taskManager = FileBackedTasksManager.loadFromFile(new File("src/tracker/resources/tasksdata.csv"));
-     //   FileBackedTasksManager.main(null);
+
         // Далее код только для тестирования работы программы
 
         Task o;

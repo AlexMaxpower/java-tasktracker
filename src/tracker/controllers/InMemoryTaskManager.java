@@ -1,7 +1,4 @@
 package tracker.controllers;
-
-import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.*;
 
 import tracker.exceptions.AddTaskException;
@@ -197,13 +194,6 @@ public class InMemoryTaskManager implements TaskManager{
     @Override
     public int addTask(Task o, Integer id) {
 
-
-
- /*       if (!canAddThisTask) {
-            System.out.println("Не могу добавить задачу!");
-            return 0;
-        }*/
-
         boolean newTask = false;
         if (id == null) {
             id = 0;
@@ -218,9 +208,6 @@ public class InMemoryTaskManager implements TaskManager{
         Optional<Task> intersectionTask = getPrioritizedTasks().stream()
                 .filter(existTask -> doesTaskIntersect(existTask, o))
                 .findFirst();
-
-        boolean canAddThisTask = getPrioritizedTasks().stream()
-                .noneMatch(existTask -> doesTaskIntersect(existTask, o));
 
         if (intersectionTask.isPresent()) {
             if (intersectionTask.get().getTaskId() != id) {
@@ -322,23 +309,16 @@ public class InMemoryTaskManager implements TaskManager{
         }
 
         if (task1.getTaskId() == task2.getTaskId()) {  // если это обновление задачи, то не сравнивать
-         /*   System.out.println("Обновление задачи - Задачи не пересекаются");
-            System.out.println("task1= " + task1);
-            System.out.println("task2= " + task2);
-            System.out.println("Задачи не пересекаются"); */
+           // Обновление задачи - Задачи не пересекаются
             return false;
         }
 
         if ((task1.getStartTime().get().isAfter(task2.getEndTime().get())
             || (task1.getEndTime().get().isBefore(task2.getStartTime().get())))) {
-        /*    System.out.println("Задачи не пересекаются");
-            System.out.println("task1= " + task1);
-            System.out.println("task2= " + task2); */
+            // Задачи не пересекаются
             return false;
         }
-       /* System.out.println("Задачи пересекаются");
-        System.out.println("task1= " + task1);
-        System.out.println("task2= " + task2); */
+        // Задачи пересекаются
         return true;
     }
 }

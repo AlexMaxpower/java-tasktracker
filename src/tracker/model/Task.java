@@ -77,7 +77,6 @@ public class Task {
         return Optional.of(startTime.get().plus(duration));
         }
         else return Optional.empty();
-      //  else return Optional.of(LocalDateTime.now());
     }
 
     @Override

@@ -57,68 +57,6 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
         }
     }
 
- /*   public static void main(String[] args) {
-
-        FileBackedTasksManager testManager = loadFromFile(new File("src/tracker/resources/tasksdata.csv"));
-
-        LocalDateTime startTime = LocalDateTime.of(2022,04,01,1,20);
-        Duration duration = Duration.ofMinutes(20);
-
-        Task firstTask = new Task("Купить клавиатуру", "Обязательно", NEW, startTime, duration);
-        testManager.addTask(firstTask,0);
-
-        Task secondTask = new Task("Полить цветы", "Полить цветы в гостиной и спальне", NEW);
-
-        testManager.addTask(secondTask,0);
-
-        // Создаем эпик и три подзадачи
-        Epic firstEpic = new Epic("Съездить на дачу",
-                "В выходные необходимо заехать на дачу на автомобиле", NEW);
-        testManager.addTask(firstEpic,0);
-
-        Subtask firstSubtask = new Subtask("Заправить автомобиль",
-                "Съездить на АЗС", NEW, firstEpic, startTime.plusDays(2).plusHours(4),
-                Duration.ofMinutes(30));
-        testManager.addTask(firstSubtask,0);
-
-        Subtask secondSubtask = new Subtask("Погрузить вещи в машину",
-                "Забрать все ненужное :)", NEW, firstEpic);
-        testManager.addTask(secondSubtask,0);
-
-        Subtask thirdSubtask = new Subtask("Взять ключи от дачи",
-                "Обязательно взять ключи от дачи", NEW, firstEpic);
-        testManager.addTask(thirdSubtask,0);
-
-        Task o;
-
-        System.out.println("Получаем вторую подзадачу по ID");
-        o = testManager.getTask(secondSubtask.getTaskId());
-        System.out.println(o);
-
-        System.out.println("Получаем первую задачу по ID");
-        o = testManager.getTask(firstTask.getTaskId());
-        System.out.println(o);
-        testManager.history();
-
-        System.out.println("Получаем вторую задачу по ID");
-        o = testManager.getTask(secondTask.getTaskId());
-        System.out.println(o);
-        testManager.history();
-
-        System.out.println("\nСравнение данных в двух менеджерах");
-        System.out.println("-------------");
-        System.out.println("\nПервый менеджер:");
-        testManager.getAllTasks();
-        testManager.history();
-
-        System.out.println("\nВторой менеджер:");
-        FileBackedTasksManager testManagerNew = loadFromFile(new File("src/tracker/resources/tasksdata.csv"));
-
-        testManagerNew.getAllTasks();
-        testManagerNew.history();
-        testManagerNew.getPrioritizedTasks();
-    }
-*/
     private void save() {
         StringBuilder strBuilder = new StringBuilder();
         List<Task> resultAllTasks = new ArrayList<>();

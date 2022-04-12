@@ -46,6 +46,8 @@ public class FileBackedTasksManagerTest extends TaskManagerTest<FileBackedTasksM
     void shouldEmptyListTaskWhenFileEmpty() {
        FileBackedTasksManager fileManager;
        fileManager = FileBackedTasksManager.loadFromFile(new File("src/tracker/resources/test.csv"));
+       fileManager.clearAll();
+       fileManager = FileBackedTasksManager.loadFromFile(new File("src/tracker/resources/test.csv"));
        List<Task> list = new ArrayList<>(fileManager.getAllTasks());
        assertTrue(list.isEmpty(),"Список задач должен быть пустым");
        fileManager.clearAll();
@@ -66,15 +68,17 @@ public class FileBackedTasksManagerTest extends TaskManagerTest<FileBackedTasksM
 
     @Test
     void shouldReturnEmptyHistoryListWhenHistoryEmpty() {
+
         FileBackedTasksManager fileManager;
         fileManager = FileBackedTasksManager.loadFromFile(new File("src/tracker/resources/test.csv"));
+        fileManager.clearAll();
         Task epic = new Epic("epic","descriptionOfEpic",NEW);
         fileManager.addTask(epic, 0);
         LocalDateTime startTime = LocalDateTime.of(2022,04,01,1,20);
         Duration duration = Duration.ofMinutes(20);
         Task subtask = new Subtask("subtask","descriptionOfSubtask",NEW, (Epic) epic,
                 startTime, duration);
-        taskManager.addTask(subtask, 0);
+        fileManager.addTask(subtask, 0);
         FileBackedTasksManager fileManagerTest;
         fileManagerTest = FileBackedTasksManager.loadFromFile(new File("src/tracker/resources/test.csv"));
         assertTrue(fileManagerTest.history().isEmpty(), "История должна быть пустой");
