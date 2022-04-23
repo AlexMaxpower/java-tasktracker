@@ -1,33 +1,50 @@
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import com.google.gson.*;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.function.Executable;
 import static org.junit.jupiter.api.Assertions.*;
-import tracker.controllers.HistoryManager;
-import tracker.controllers.InMemoryTaskManager;
-import tracker.controllers.TaskManager;
+import tracker.controllers.*;
 import tracker.exceptions.AddTaskException;
 import tracker.model.Epic;
 import tracker.model.Subtask;
 import tracker.model.Task;
 import tracker.util.Managers;
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
 import static tracker.model.Status.*;
 
 public abstract class TaskManagerTest<T extends TaskManager> {
 
     T taskManager;
+    static KVServer kvServer;
+    HttpTaskServer taskServer;
 
     public TaskManagerTest(T taskManager) {
         this.taskManager = taskManager;
     }
 
+    @BeforeAll
+    public static void beforeAll(){
+        try {
+            kvServer = new KVServer();
+            kvServer.start();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+
     @BeforeEach
     public void beforeEach() {
+        taskServer = new HttpTaskServer(taskManager);
         taskManager.clearAll();
         Task task1 = new Task("task1", "descriptionOfTask1", NEW);
         taskManager.getTask(taskManager.addTask(task1, 0)); // добавляем задачу и заполняем историю
@@ -44,6 +61,15 @@ public abstract class TaskManagerTest<T extends TaskManager> {
         taskManager.getTask(taskManager.addTask(subtask2, 0));
     }
 
+    @AfterEach
+    public void afterEach(){
+        taskServer.stop();
+    }
+
+    @AfterAll
+    public static void afterAll(){
+       kvServer.stop();
+    }
 
     @Test
     // тест на возврат статуса NEW у эпика при пустом списке подзадач
@@ -460,11 +486,11 @@ public abstract class TaskManagerTest<T extends TaskManager> {
     }
 
     @Test
-    // получение InMemoryTaskManager в качестве "по-умолчанию"
+    // получение HTTPTaskManager в качестве "по-умолчанию"
     void getDefaultShouldReturnInMemoryTaskManager() {
         TaskManager taskManager = Managers.getDefault();
-        assertEquals(InMemoryTaskManager.class, taskManager.getClass(),
-                "Должен возвращать объект класса InMemoryTask");
+        assertEquals(HTTPTaskManager.class, taskManager.getClass(),
+                "Должен возвращать объект класса HTTPTaskManager");
     }
 
     @Test
@@ -547,5 +573,367 @@ public abstract class TaskManagerTest<T extends TaskManager> {
         assertEquals(1,list.get(3).getTaskId(), "Четвертой должна быть задача без времени");
         assertEquals(2,list.get(4).getTaskId(), "Пятой должна быть задача без времени");
         assertEquals(5,list.get(5).getTaskId(), "Шестым должен быть сабтаск без времени");
+    }
+
+    // проверка работы эндпоинта GET "http://localhost:8080/tasks/task/ при нормальной работе
+    @Test
+    void getTaskEndpointShouldReturnListOfTasks() throws IOException, InterruptedException {
+        HttpClient client = HttpClient.newHttpClient();
+        // вызываем список всех простых задач из менеджера
+        URI url = URI.create("http://localhost:8080/tasks/task/");
+        HttpRequest request = HttpRequest.newBuilder().uri(url).GET().build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, response.statusCode(), "Код ответа должен быть 200");
+        JsonElement jsonElement = JsonParser.parseString(response.body());
+        JsonArray jsonArray = jsonElement.getAsJsonArray();
+        JsonObject jsonObject = jsonArray.get(0).getAsJsonObject();
+        Integer firstTaskId = jsonObject.get("taskId").getAsInt();
+        String firstTaskName = jsonObject.get("name").getAsString();
+        assertEquals(1, firstTaskId, "Id первой задачи должен быть равен 1");
+        assertEquals("task1",firstTaskName, "Название первой задачи должно быть task1");
+        jsonObject = jsonArray.get(1).getAsJsonObject();
+        Integer secondTaskId = jsonObject.get("taskId").getAsInt();
+        String secondTaskName = jsonObject.get("name").getAsString();
+        assertEquals(2, secondTaskId, "Id второй задачи должен быть равен 2");
+        assertEquals("task2", secondTaskName, "Название второй задачи должно быть task2");
+        assertEquals(2,jsonArray.size(), "Должно быть получено 2 задачи");
+    }
+
+    // проверка работы эндпоинта GET "http://localhost:8080/tasks/task/ при отсутствии простых задач
+    @Test
+    void getTaskEndpointShouldReturnListOfTasksWhenTaskListEmpty() throws IOException, InterruptedException {
+        taskManager.clearAll();
+        HttpClient client = HttpClient.newHttpClient();
+        // вызываем список всех простых задач из менеджера
+        URI url = URI.create("http://localhost:8080/tasks/task/");
+        HttpRequest request = HttpRequest.newBuilder().uri(url).GET().build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, response.statusCode(), "Код ответа должен быть 200");
+        assertEquals("[]", response.body(), "Список задач должен быть пустым");
+    }
+
+    // проверка работы эндпоинта GET "http://localhost:8080/tasks/task/?id= при нормальной работе
+    @Test
+    void getTaskByIdEndpointShouldReturnTask() throws IOException, InterruptedException {
+        HttpClient client = HttpClient.newHttpClient();
+        // вызываем первую простую задачу из менеджера
+        URI url = URI.create("http://localhost:8080/tasks/task/?id=1");
+        HttpRequest request = HttpRequest.newBuilder().uri(url).GET().build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, response.statusCode(), "Код ответа должен быть 200");
+        JsonElement jsonElement = JsonParser.parseString(response.body());
+        JsonObject jsonObject = jsonElement.getAsJsonObject();
+        Integer taskId = jsonObject.get("taskId").getAsInt();
+        String name = jsonObject.get("name").getAsString();
+        assertEquals(1, taskId, "Id задачи должен быть равен 1");
+        assertEquals("task1", name, "Название задачи должно быть task1");
+    }
+
+    // проверка работы эндпоинта GET "http://localhost:8080/tasks/task/?id= при пустом списке задач или с "плохим" Id
+    @Test
+    void getTaskByIdEndpointShouldReturn404WhenTaskListIsEmpty() throws IOException, InterruptedException {
+        taskManager.clearAll();
+        HttpClient client = HttpClient.newHttpClient();
+        // вызываем первую простую задачу из менеджера
+        URI url = URI.create("http://localhost:8080/tasks/task/?id=1");
+        HttpRequest request = HttpRequest.newBuilder().uri(url).GET().build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        assertEquals(404, response.statusCode(), "Код ответа должен быть 404 (не найдено)");
+        assertEquals("Некорректные параметры запроса!", response.body(), "Должен быть ответ сервера");
+    }
+
+    // проверка работы эндпоинта POST "http://localhost:8080/tasks/task/ при добавлении задачи
+    @Test
+    void addTaskEndpointShouldAddTaskInManager() throws IOException, InterruptedException {
+        // добавляем простую задачу
+        Task newTask = new Task("NewTask", "DescriptionNewTask", IN_PROGRESS);
+        HttpClient client = HttpClient.newHttpClient();
+        URI url = URI.create("http://localhost:8080/tasks/task/");
+        Gson gson = new Gson();
+        String json = gson.toJson(newTask);
+        HttpRequest.BodyPublisher body = HttpRequest.BodyPublishers.ofString(json);
+        HttpRequest request = HttpRequest.newBuilder().uri(url).POST(body).build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, response.statusCode(), "Код ответа сервера должен быть 200");
+        assertEquals(3, taskManager.getTasks().size(), "В менеджере должно быть 3 простых задачи");
+        assertEquals("NewTask", taskManager.getTasks().get(taskManager.getTasks().size()-1).getName(),
+                "Название задачи должно быть NewTask");
+        assertEquals(IN_PROGRESS, taskManager.getTasks().get(taskManager.getTasks().size()-1).getStatus(),
+                "Статус задачи должен быть IN_PROGRESS");
+    }
+
+    // проверка работы эндпоинта POST "http://localhost:8080/tasks/task/ при обновлении задачи
+    @Test
+    void addTaskEndpointShouldUpdateTaskInManager() throws IOException, InterruptedException {
+        // обновляем статус у простой задачи с NEW на DONE
+        Task task = taskManager.getTask(1);
+        task.setStatus(DONE);
+        HttpClient client = HttpClient.newHttpClient();
+        URI url = URI.create("http://localhost:8080/tasks/task/");
+        Gson gson = new Gson();
+        String json = gson.toJson(task);
+        HttpRequest.BodyPublisher body = HttpRequest.BodyPublishers.ofString(json);
+        HttpRequest request = HttpRequest.newBuilder().uri(url).POST(body).build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, response.statusCode(), "Код ответа сервера должен быть 200");
+        assertEquals(2, taskManager.getTasks().size(), "В менеджере должно быть 2 простых задачи");
+        assertEquals("task1", taskManager.getTask(task.getTaskId()).getName(),
+                "Название задачи должно быть task1");
+        assertEquals(DONE, taskManager.getTask(task.getTaskId()).getStatus(),
+                "Статус задачи должен быть DONE");
+    }
+
+    // проверка работы эндпоинта DELETE "http://localhost:8080/tasks/task/?id= , когда задача есть в менеджере
+    @Test
+    void deleteTaskEndpointShouldDeleteTaskInManager() throws IOException, InterruptedException {
+        HttpClient client = HttpClient.newHttpClient();
+        URI url = URI.create("http://localhost:8080/tasks/task/?id=1");
+        HttpRequest request = HttpRequest.newBuilder().uri(url).DELETE().build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, response.statusCode(), "Код ответа сервера должен быть 200");
+        assertEquals(1, taskManager.getTasks().size(), "В менеджере должна быть 1 простая задача");
+        assertEquals("task2", taskManager.getTasks().get(0).getName(),
+                "Название задачи должно быть task2");
+    }
+
+    // проверка работы эндпоинта DELETE "http://localhost:8080/tasks/task/?id= при отсутствии задач
+    @Test
+    void deleteTaskEndpointShouldReturn404ifTaskListEmpty() throws IOException, InterruptedException {
+        taskManager.clearAll();
+        HttpClient client = HttpClient.newHttpClient();
+        URI url = URI.create("http://localhost:8080/tasks/task/?id=1");
+        HttpRequest request = HttpRequest.newBuilder().uri(url).DELETE().build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        assertEquals(404, response.statusCode(), "Код ответа сервера должен быть 404 (не найдено");
+        assertEquals("Некорректные параметры запроса!", response.body(),
+                "Должен быть ответ сервера");
+    }
+
+    // проверка работы эндпоинта DELETE "http://localhost:8080/tasks/task/
+    @Test
+    void deleteTaskEndpointShouldDeleteAllTaskInManager() throws IOException, InterruptedException {
+        HttpClient client = HttpClient.newHttpClient();
+        URI url = URI.create("http://localhost:8080/tasks/task/");
+        HttpRequest request = HttpRequest.newBuilder().uri(url).DELETE().build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, response.statusCode(), "Код ответа сервера должен быть 200");
+        assertTrue(taskManager.getTasks().isEmpty(), "В менеджере не должно быть простых задач");
+        assertTrue(taskManager.getSubtasks().isEmpty(), "В менеджере не должно быть подзадач");
+        assertTrue(taskManager.getEpics().isEmpty(), "В менеджере не должно быть эпиков");
+    }
+
+    // проверка работы эндпоинта DELETE "http://localhost:8080/tasks/task/ при отсутствии задач в менеджере
+    @Test
+    void deleteTaskEndpointShouldDeleteAllTaskInManagerWhenTaskListEmpty() throws IOException, InterruptedException {
+        taskManager.clearAll();
+        HttpClient client = HttpClient.newHttpClient();
+        URI url = URI.create("http://localhost:8080/tasks/task/");
+        HttpRequest request = HttpRequest.newBuilder().uri(url).DELETE().build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, response.statusCode(), "Код ответа сервера должен быть 200");
+        assertTrue(taskManager.getTasks().isEmpty(), "В менеджере не должно быть простых задач");
+        assertTrue(taskManager.getSubtasks().isEmpty(), "В менеджере не должно быть подзадач");
+        assertTrue(taskManager.getEpics().isEmpty(), "В менеджере не должно быть эпиков");
+    }
+
+    // проверка работы эндпоинта GET "http://localhost:8080/tasks/subtask/ при нормальной работе
+    @Test
+    void getSubtaskEndpointShouldReturnListOfSubtasks() throws IOException, InterruptedException {
+        HttpClient client = HttpClient.newHttpClient();
+        // вызываем список подзадач из менеджера
+        URI url = URI.create("http://localhost:8080/tasks/subtask/");
+        HttpRequest request = HttpRequest.newBuilder().uri(url).GET().build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, response.statusCode(), "Код ответа должен быть 200");
+        JsonElement jsonElement = JsonParser.parseString(response.body());
+        JsonArray jsonArray = jsonElement.getAsJsonArray();
+        JsonObject jsonObject = jsonArray.get(0).getAsJsonObject();
+        Integer firstSubtaskId = jsonObject.get("taskId").getAsInt();
+        String firstSubtaskName = jsonObject.get("name").getAsString();
+        assertEquals(4, firstSubtaskId, "id первой подзадачи должен быть равен 4");
+        assertEquals("subtask1", firstSubtaskName, "Название первой подзадачи должно быть subtask1");
+        jsonObject = jsonArray.get(1).getAsJsonObject();
+        Integer secondSubtaskId = jsonObject.get("taskId").getAsInt();
+        String secondSubtaskName = jsonObject.get("name").getAsString();
+        assertEquals(5, secondSubtaskId, "id второй подзадачи должен быть равен 5");
+        assertEquals("subtask2", secondSubtaskName, "Название второй подзадачи должно быть subtask2");
+        assertEquals(2,jsonArray.size(), "Должно быть получено 2 подзадачи");
+    }
+
+    // проверка работы эндпоинта GET "http://localhost:8080/tasks/subtask/ при отсутствии подзадач в менеджере
+    @Test
+    void getSubtaskEndpointShouldReturnEmptyWhenListOfSubtaskEmpty() throws IOException, InterruptedException {
+        taskManager.clearAll();
+        HttpClient client = HttpClient.newHttpClient();
+        // вызываем список подзадач из менеджера
+        URI url = URI.create("http://localhost:8080/tasks/subtask/");
+        HttpRequest request = HttpRequest.newBuilder().uri(url).GET().build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, response.statusCode(), "Код ответа должен быть 200");
+        assertEquals("[]", response.body(), "Список подзадач должен быть пустым");
+    }
+
+    // проверка работы эндпоинта GET "http://localhost:8080/tasks/epic/ при нормальной работе
+    @Test
+    void getEpicsEndpointShouldReturnListOfEpics() throws IOException, InterruptedException {
+        Epic epicNew = new Epic("epic2", "descriptionEpic2", NEW);
+        taskManager.addTask(epicNew,0);
+        HttpClient client = HttpClient.newHttpClient();
+        // вызываем список эпиков из менеджера
+        URI url = URI.create("http://localhost:8080/tasks/epic/");
+        HttpRequest request = HttpRequest.newBuilder().uri(url).GET().build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, response.statusCode(), "Код ответа должен быть 200");
+        JsonElement jsonElement = JsonParser.parseString(response.body());
+        JsonArray jsonArray = jsonElement.getAsJsonArray();
+        JsonObject jsonObject = jsonArray.get(0).getAsJsonObject();
+        Integer firstEpicId = jsonObject.get("taskId").getAsInt();
+        String firstEpicName = jsonObject.get("name").getAsString();
+        assertEquals(3, firstEpicId, "id первой эпика должен быть равен 3");
+        assertEquals("epic1", firstEpicName, "Название первого эпика должно быть epic1");
+        jsonObject = jsonArray.get(1).getAsJsonObject();
+        Integer secondEpicId = jsonObject.get("taskId").getAsInt();
+        String secondEpicName = jsonObject.get("name").getAsString();
+        assertEquals(6, secondEpicId, "id второго эпика должен быть равен 6");
+        assertEquals("epic2", secondEpicName, "Название второго эпика должно быть epic2");
+        assertEquals(2,jsonArray.size(), "Должно быть получено 2 эпика");
+    }
+
+    // проверка работы эндпоинта GET "http://localhost:8080/tasks/epic/ при отсутствии подзадач в менеджере
+    @Test
+    void getEpicsEndpointShouldReturnEmptyWhenListOfEpicEmpty()  throws IOException, InterruptedException {
+        taskManager.clearAll();
+        HttpClient client = HttpClient.newHttpClient();
+        // вызываем список эпиков из менеджера
+        URI url = URI.create("http://localhost:8080/tasks/epic/");
+        HttpRequest request = HttpRequest.newBuilder().uri(url).GET().build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, response.statusCode(), "Код ответа должен быть 200");
+        assertEquals("[]", response.body(), "Список эпиков должен быть пустым");
+    }
+
+    // проверка работы эндпоинта GET "http://localhost:8080/tasks/subtask/epic/?id= при нормальной работе
+    @Test
+    void getEpicSubtaskEndpointShouldReturnListOfSubtasks() throws IOException, InterruptedException {
+        HttpClient client = HttpClient.newHttpClient();
+        // вызываем список подзадач эпика из менеджера
+        URI url = URI.create("http://localhost:8080/tasks/subtask/epic/?id=3");
+        HttpRequest request = HttpRequest.newBuilder().uri(url).GET().build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, response.statusCode(), "Код ответа должен быть 200");
+        JsonElement jsonElement = JsonParser.parseString(response.body());
+        JsonArray jsonArray = jsonElement.getAsJsonArray();
+        JsonObject jsonObject = jsonArray.get(0).getAsJsonObject();
+        Integer firstSubtaskId = jsonObject.get("taskId").getAsInt();
+        String firstSubtaskName = jsonObject.get("name").getAsString();
+        assertEquals(4, firstSubtaskId, "id первой подзадачи должен быть равен 4");
+        assertEquals("subtask1", firstSubtaskName, "Название первой подзадачи должно быть subtask1");
+        jsonObject = jsonArray.get(1).getAsJsonObject();
+        Integer secondSubtaskId = jsonObject.get("taskId").getAsInt();
+        String secondSubtaskName = jsonObject.get("name").getAsString();
+        assertEquals(5, secondSubtaskId, "id второй подзадачи должен быть равен 5");
+        assertEquals("subtask2", secondSubtaskName, "Название второй подзадачи должно быть subtask2");
+        assertEquals(2,jsonArray.size(), "Должно быть получено 2 подзадачи");
+    }
+
+    // проверка работы эндпоинта GET "http://localhost:8080/tasks/subtask/epic/?id= при пустом списке подзадач у эпика
+    @Test
+    void getEpicSubtaskEndpointShouldReturnEmptyListOfSubtasks() throws IOException, InterruptedException {
+        Epic epicNew = new Epic("epic2", "descriptionEpic2", NEW);
+        int epicId = taskManager.addTask(epicNew,0);
+        HttpClient client = HttpClient.newHttpClient();
+        // вызываем список подзадач эпика из менеджера
+        URI url = URI.create("http://localhost:8080/tasks/subtask/epic/?id=" + epicId);
+        HttpRequest request = HttpRequest.newBuilder().uri(url).GET().build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, response.statusCode(), "Код ответа должен быть 200");
+        assertEquals("[]", response.body(), "Список эпиков должен быть пустым");
+    }
+
+    // проверка работы эндпоинта GET "http://localhost:8080/tasks/history при нормальной работе
+    @Test
+    void getHistoryEndpointShouldReturnHistoryList() throws IOException, InterruptedException {
+        HttpClient client = HttpClient.newHttpClient();
+        // вызываем список задач истории из менеджера
+        URI url = URI.create("http://localhost:8080/tasks/history");
+        HttpRequest request = HttpRequest.newBuilder().uri(url).GET().build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, response.statusCode(), "Код ответа должен быть 200");
+        JsonElement jsonElement = JsonParser.parseString(response.body());
+        JsonArray jsonArray = jsonElement.getAsJsonArray();
+        JsonObject jsonObject = jsonArray.get(0).getAsJsonObject();
+        Integer firstTaskId = jsonObject.get("taskId").getAsInt();
+        String firstTaskName = jsonObject.get("name").getAsString();
+        assertEquals(1, firstTaskId, "id первой задачи в истории должен быть равен 1");
+        assertEquals("task1", firstTaskName, "Название первой задачи должно быть task1");
+        jsonObject = jsonArray.get(4).getAsJsonObject();
+        Integer lastTaskId = jsonObject.get("taskId").getAsInt();
+        String lastTaskName = jsonObject.get("name").getAsString();
+        assertEquals(5, lastTaskId, "id последней задачи в истории должен быть равен 5");
+        assertEquals("subtask2", lastTaskName, "Название последней задачи в истории должно быть subtask2");
+        assertEquals(5,jsonArray.size(), "Должно быть получено 5 задач");
+    }
+
+    // проверка работы эндпоинта GET "http://localhost:8080/tasks/history при пустой истории
+    @Test
+    void getHistoryEndpointShouldReturnEmptyHistoryListWhenHistoryEmpty() throws IOException, InterruptedException {
+        taskManager.clearAll();
+        HttpClient client = HttpClient.newHttpClient();
+        // вызываем список задач истории из менеджера
+        URI url = URI.create("http://localhost:8080/tasks/history");
+        HttpRequest request = HttpRequest.newBuilder().uri(url).GET().build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, response.statusCode(), "Код ответа должен быть 200");
+        assertEquals("[]", response.body(), "Список задач в истории должен быть пустым");
+    }
+
+    // проверка работы эндпоинта GET "http://localhost:8080/tasks/ при нормальной работе
+    @Test
+    void getPrioritizedTasksEndpointShouldReturnSortedTaskList() throws IOException, InterruptedException {
+        LocalDateTime startTime = LocalDateTime.of(2023, 04, 01, 1, 20);
+        Duration duration = Duration.ofMinutes(5);
+        Task task1 = new Task("NewTask1", "Test addNewTask1 description", NEW,
+                startTime, duration);
+        taskManager.addTask(task1, 0);
+        Task task2 = new Task("NewTask2", "Test addNewTask2 description", NEW,
+                startTime.minusMinutes(50), duration);
+        taskManager.addTask(task2, 0);
+        HttpClient client = HttpClient.newHttpClient();
+        // вызываем список приоритетных задач из менеджера
+        URI url = URI.create("http://localhost:8080/tasks/");
+        HttpRequest request = HttpRequest.newBuilder().uri(url).GET().build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, response.statusCode(), "Код ответа должен быть 200");
+        JsonElement jsonElement = JsonParser.parseString(response.body());
+        JsonArray jsonArray = jsonElement.getAsJsonArray();
+        assertEquals(6, jsonArray.size(), "В списке должно быть 6 задач без эпика");
+        JsonObject jsonObject = jsonArray.get(0).getAsJsonObject();
+        Integer firstTaskId = jsonObject.get("taskId").getAsInt();
+        String firstTaskName = jsonObject.get("name").getAsString();
+        assertEquals(4, firstTaskId, "Первым в списке должен быть сабтаск с ID=4");
+        assertEquals("subtask1", firstTaskName, "Название первой задачи в списке должно быть subtask1");
+        jsonObject = jsonArray.get(1).getAsJsonObject();
+        Integer secondTaskId = jsonObject.get("taskId").getAsInt();
+        String secondTaskName = jsonObject.get("name").getAsString();
+        assertEquals(7, secondTaskId, "id второй задачи в списке должен быть равен 7");
+        assertEquals("NewTask2", secondTaskName, "Название второй задачи списка должно быть NewTask2");
+        jsonObject = jsonArray.get(2).getAsJsonObject();
+        Integer thirdTaskId = jsonObject.get("taskId").getAsInt();
+        String thirdTaskName = jsonObject.get("name").getAsString();
+        assertEquals(6, thirdTaskId, "id третьей задачи в списке должен быть равен 6");
+        assertEquals("NewTask1", thirdTaskName, "Название третьей задачи списка должно быть NewTask1");
+    }
+
+    // проверка работы эндпоинта GET "http://localhost:8080/tasks/ при отсутствии задач в менеджере
+    @Test
+    void getPrioritizedTasksEndpointShouldReturnEmptyTaskList() throws IOException, InterruptedException {
+        taskManager.clearAll();
+        HttpClient client = HttpClient.newHttpClient();
+        // вызываем список приоритетных задач из менеджера
+        URI url = URI.create("http://localhost:8080/tasks/");
+        HttpRequest request = HttpRequest.newBuilder().uri(url).GET().build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, response.statusCode(), "Код ответа должен быть 200");
+        assertEquals("[]", response.body(), "Список задач должен быть пустым");
     }
 }

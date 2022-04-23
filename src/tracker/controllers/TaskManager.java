@@ -8,20 +8,31 @@ public interface TaskManager {
 
     // получение списка всех задач (пункт 2.1)
     List<Task> getAllTasks();      // оставил пока для тестирования программы
+
     List<Task> getPrioritizedTasks(); // возвращает отсортированный по старту список задач
+
     List<Task> getTasks();
+
     List<Task> getEpics();
+
     List<Task> getSubtasks();
+
     List<Task> getEpicSubtasks(Epic epic); // (пункт 3.1)
 
     // удаление всех задач из менеджера (пункт 2.2)
     void clearAll();
+
     void clearTasks();
+
     void clearEpics();
+
     void clearSubtasks();
 
     // получение задачи по идентификатору (пункт 2.3)
     Task getTask(Integer id);
+
+    // получение задачи по идентификатору без обновления истории
+    Task getTaskWithoutHistory(Integer id);
 
     // добавляем или обновляем задачу/подзадачу/эпик в менеджер (пункты 2.4 и 2.5)
     int addTask(Task o, Integer id);
@@ -31,4 +42,5 @@ public interface TaskManager {
 
     // вывод истории просмотров задач
     List<Task> history();
+
 }

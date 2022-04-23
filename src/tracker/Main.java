@@ -1,7 +1,6 @@
 package tracker;
 
-import tracker.controllers.FileBackedTasksManager;
-import tracker.controllers.TaskManager;
+import tracker.controllers.*;
 import tracker.model.Epic;
 import tracker.model.Status;
 import tracker.model.Subtask;
@@ -9,6 +8,7 @@ import tracker.model.Task;
 import tracker.util.Managers;
 
 import java.io.File;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
@@ -16,10 +16,13 @@ import static tracker.model.Status.NEW;
 
 public class Main {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
 
+        new KVServer().start();
         TaskManager taskManager = Managers.getDefault();
+        System.out.println(((HTTPTaskManager)(taskManager)).getApiKey());
         //FileBackedTasksManager taskManager = FileBackedTasksManager.loadFromFile(new File("src/tracker/resources/tasksdata.csv"));
+        HttpTaskServer taskServer = new HttpTaskServer(taskManager);
 
         // Далее код только для тестирования работы программы
 
@@ -33,7 +36,7 @@ public class Main {
         taskManager.addTask(firstTask,0);
         taskManager.addTask(secondTask,0);
 
-        LocalDateTime startTime = LocalDateTime.of(2022,04,01,1,20);
+        LocalDateTime startTime = LocalDateTime.of(2023,04,01,1,20);
         Duration duration = Duration.ofMinutes(20);
 
 
@@ -95,7 +98,8 @@ public class Main {
         System.out.println(o);
         taskManager.history();
 
-     //   FileBackedTasksManager.main(null);
+/*
+        //   FileBackedTasksManager.main(null);
 
         taskManager.getAllTasks();
         taskManager.getPrioritizedTasks();
@@ -103,7 +107,7 @@ public class Main {
         System.out.println("Удаляем вторую задачу по ID");
         taskManager.deleteTask(secondTask.getTaskId());
         taskManager.history();
- /*
+
         // удаляем первый эпик по id
         System.out.println("Удаляем первый эпик по ID");
         taskManager.deleteTask(firstEpic.getTaskId());
@@ -237,7 +241,7 @@ public class Main {
 
          */
 
-
+/*
         // Создаем еще задачи
         Task thirdTask = new Task("Сходить в гараж", "Забрать инструменты", Status.NEW,
                 startTime.minusDays(2).plusHours(5),
@@ -261,6 +265,6 @@ public class Main {
 
          taskManager.getPrioritizedTasks();
 
-
+*/
     }
 }

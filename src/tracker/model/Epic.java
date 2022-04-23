@@ -61,7 +61,11 @@ public class Epic extends Task {
     }
 
     public void deleteSubtask(Subtask subtask) {
-        subtasksEpic.remove(subtask);
+        for (int i = 0 ; i < subtasksEpic.size(); i++) {
+            if (subtasksEpic.get(i).getTaskId() == subtask.getTaskId()) {
+                subtasksEpic.remove(i);
+            }
+        }
         checkEpicStatus();
         checkEpicTime();
     }

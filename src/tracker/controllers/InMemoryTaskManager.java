@@ -190,6 +190,21 @@ public class InMemoryTaskManager implements TaskManager{
         return null;
     }
 
+    // получение задачи по идентификатору без обновления истории
+    @Override
+    public Task getTaskWithoutHistory(Integer id) {
+        if (tasks.containsKey(id)) {
+            return tasks.get(id);
+        }
+        else if (subtasks.containsKey(id)) {
+            return subtasks.get(id);
+        }
+        else if (epics.containsKey(id)) {
+            return epics.get(id);
+        }
+        return null;
+    }
+
     // добавляем или обновляем задачу/подзадачу/эпик в менеджер (пункты 2.4 и 2.5)
     @Override
     public int addTask(Task o, Integer id) {
@@ -281,8 +296,8 @@ public class InMemoryTaskManager implements TaskManager{
     @Override
     public List<Task> history() {
         System.out.print("Печатаем историю: ");
-        List<Task> historyList = new ArrayList<>();
-        historyList = historyManager.getHistory();
+        List<Task> actualHistoryList = new ArrayList<>();
+        List<Task> historyList = historyManager.getHistory();
         if (historyList != null) {
             int i = 0; // вспомогательная переменная для вывода стрелочки
             for (Task historyObject : historyList) {
@@ -291,10 +306,11 @@ public class InMemoryTaskManager implements TaskManager{
                 }
                 i++;
                 System.out.print(historyObject.getTaskId());
+                actualHistoryList.add(getTaskWithoutHistory(historyObject.getTaskId()));
             }
             System.out.println("");
         }
-        return historyList;
+        return actualHistoryList;
     }
 
     @Override
