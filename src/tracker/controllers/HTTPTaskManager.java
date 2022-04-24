@@ -1,12 +1,13 @@
 package tracker.controllers;
 
-import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 import tracker.model.Epic;
 import tracker.model.Subtask;
 import tracker.model.Task;
 import java.util.ArrayList;
 import java.util.List;
+
+import static tracker.util.Converter.*;
 
 public class HTTPTaskManager extends FileBackedTasksManager {
     private KVTaskClient kvtaskClient;
@@ -20,23 +21,6 @@ public class HTTPTaskManager extends FileBackedTasksManager {
         this.apiKey = apiKey;
         kvtaskClient.setApiKey(apiKey);
     }
-
-    private static Gson gson = new GsonBuilder()
-            .setPrettyPrinting()
-            .serializeNulls()
-            .create();
-
-    private static Gson gsonWithEpicAdapter = new GsonBuilder()
-            .setPrettyPrinting()
-            .serializeNulls()
-            .registerTypeAdapter(Epic.class, new EpicAdapter())
-            .create();
-
-    private static Gson gsonWithSubtaskAdapter = new GsonBuilder()
-            .setPrettyPrinting()
-            .serializeNulls()
-            .registerTypeAdapter(Subtask.class, new SubtaskAdapter())
-            .create();
 
     public HTTPTaskManager(String uriString,  List<Task> taskList, List<Integer> historyIdTasks,
                            KVTaskClient kvtaskClient) {
@@ -109,7 +93,6 @@ public class HTTPTaskManager extends FileBackedTasksManager {
         for (Task task : history()) {
             historyListIds.add(task.getTaskId());
         }
-
         kvtaskClient.put("history", gson.toJson(historyListIds));
     }
 }

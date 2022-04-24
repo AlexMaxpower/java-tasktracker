@@ -45,14 +45,6 @@ public class InMemoryHistoryManager implements HistoryManager {
 
         private int size = 0;
 
-    /*    public T getFirst() {
-            Node<T> curHead = head;
-            if (curHead == null) {
-                return null;
-            }
-            return head.data;
-        }*/
-
         public Node<T> linkLast(T element) {
             Node<T> oldTail = tail;
             Node<T> newNode = new Node<>(tail, element, null);
@@ -64,7 +56,7 @@ public class InMemoryHistoryManager implements HistoryManager {
                 tail = newNode;
             }
             else {
-                oldTail.next = newNode;
+                oldTail.setNext(newNode);
             }
             size++;
 
@@ -76,18 +68,18 @@ public class InMemoryHistoryManager implements HistoryManager {
             Node<T> nextElement;
             if (head != tail) {
                 if (element == head) {
-                   nextElement = element.next;
-                   nextElement.prev = null;
+                   nextElement = element.getNext();
+                   nextElement.setPrev(null);
                    head = nextElement;
                 } else if (element == tail) {
-                    prevElement = element.prev;
-                    prevElement.next = null;
+                    prevElement = element.getPrev();
+                    prevElement.setNext(null);
                     tail = prevElement;
                 } else {
-                    nextElement = element.next;
-                    prevElement = element.prev;
-                    nextElement.prev = prevElement;
-                    prevElement.next = nextElement;
+                    nextElement = element.getNext();
+                    prevElement = element.getPrev();
+                    nextElement.setPrev(prevElement);
+                    prevElement.setNext(nextElement);
                 }
             } else if (head == tail){
                 head = null;
@@ -96,17 +88,13 @@ public class InMemoryHistoryManager implements HistoryManager {
             size--;
         }
 
-   /*     public int size() {
-            return this.size;
-        }*/
-
         public List<Task> getTasks() {
             List<Task> historyTasks = new ArrayList<>();
             Node<T> curNode = head;
 
             for (int i=0; i<size; i++) {
-                historyTasks.add((Task) curNode.data);
-                Node<T> nextNode = curNode.next;
+                historyTasks.add((Task) curNode.getData());
+                Node<T> nextNode = curNode.getNext();
                 curNode = nextNode;
             }
             return historyTasks;

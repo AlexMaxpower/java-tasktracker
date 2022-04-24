@@ -6,8 +6,6 @@ import tracker.model.Status;
 import tracker.model.Subtask;
 import tracker.model.Task;
 import tracker.util.Managers;
-
-import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDateTime;

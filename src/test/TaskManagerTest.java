@@ -41,7 +41,6 @@ public abstract class TaskManagerTest<T extends TaskManager> {
 
     }
 
-
     @BeforeEach
     public void beforeEach() {
         taskServer = new HttpTaskServer(taskManager);
