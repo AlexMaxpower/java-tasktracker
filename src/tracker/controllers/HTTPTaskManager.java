@@ -41,6 +41,7 @@ public class HTTPTaskManager extends FileBackedTasksManager {
         List<Task> taskList = new ArrayList<>();
 
         if (jsonTasks != null) {
+        //    ArrayList taskList = gson.fromJson(jsonTasks, ArrayList.class);
             taskList = gson.fromJson(jsonTasks, new TypeToken<ArrayList<Task>>(){}.getType());
         }
 
